@@ -4,66 +4,86 @@ from mpi4py import MPI
 import time
 import isPrimeScript
 
-start_time = time.time()
-
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
-arr = [0]
+arr = []
 res = []
-data = np.array([0,0])
+data = np.array([])
 c = 0
+
 if rank == 0:
 
-    print('Digite K')
-    k = int(input())
-    k = (k/2)
-    maxn = math.ceil(float(k)/(size-1))
+    kjump = 100000
 
-    print('son', k, 'numeros')
-    print('son ', size, ' procesos')
-    print('son ', size-1, ' procesos esclavos')
-    print('son ', maxn, ' numeros por proceso')
+    print('Digite W en cientos de miles')
+    kmax = int(input())
+    kmax = kmax
 
-    arr = [2]
-    curn = 3
-    proc = 1
-    while k > 0:
-        arr.append(curn)
-        curn = curn + 2
-        k = k - 1
+    for ik in range(1, kmax+1):
+        curk = ik * kjump
 
-        if len(arr) >= maxn:
-            print(arr)
-            comm.Send([np.array([arr]), MPI.INT], dest=proc, tag=1)
-            proc = proc + 1
-            arr = []
+        for ix in range(1, size):
+            curk = ik * kjump
 
-    if k == 0 & len(arr) != 0:
-        print(arr)
-        comm.Send([np.array([arr]), MPI.INT], dest=proc, tag=1)
-        proc = proc + 1
-        arr = []
+            start_time = time.time()
 
+            maxn = (curk - 2) / float(2)
+            maxn = math.ceil(maxn) + 1
+            maxn = math.ceil(maxn / ix)
 
-    for proc in range(1, size):
-        comm.Recv([data, MPI.INT], source=proc, tag=2)
-        res.append(data[1])
+            arr = [2]
+            all = [2]
+            k = 1
+            proc = 1
+            while (2*k)+1 <= curk:
+                arr.append((2*k)+1)
+                all.append((2*k)+1)
+                k = k + 1
 
-    end_time = time.time()
+                if len(arr) >= maxn:
+                    for i in range(0, len(arr)):
+                        req = comm.Send([np.array([arr[i], len(arr)]), MPI.INT], dest=proc, tag=i+1)
+                        #req.Test()
+                    proc = proc + 1
+                    arr = []
 
-    print('primos >', res)
-    print('tiempo de exec > ', end_time-start_time)
+            if len(arr) != 0:
+                for i in range(0, len(arr)):
+                    req = comm.Send([np.array([arr[i], len(arr)]), MPI.INT], dest=proc, tag=i+1)
+                    #req.Test()
+                proc = proc + 1
+                arr = []
+
+            for n in range(0, len(all)):
+                comm.Recv([data, MPI.INT], tag=all[n])
+                res.append(data[0])
+
+            end_time = time.time()
+
+            print('primos >', res)
+            print('primos >', np.sum(res))
+            print('tiempo de exec > ', end_time-start_time)
+            comm.Bcast(np.array(1), root=0, tag=0)
+
+    print('done')
+    comm.Bcast(np.array(0), root=0, tag=0)
 else:
-    comm.Recv([data, MPI.INT], source=0, tag=1)
+    i = 1
+    while True:
+        req = comm.Recv([data, MPI.INT], source=0, tag=i)
+        req.Wait()
+        i = i + 1
 
+        if i == data[1]:
+            i = 0
 
+        if data[0] == 0 and i == 0:
+            break
 
-#    max = len(data[0])
- #   r = []
-  #  for i in range(0, max):
-   #     r.append(isPrimeScript.isPrime(data[0][i]))
-
-    #comm.Send([np.array([data[0], r]), MPI.INT], dest=0, tag=2)
-
+        comm.Send(
+            np.array(isPrimeScript.isPrime(data[0])),
+            dest=0,
+            tag=data[0]
+        )
