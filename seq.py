@@ -11,10 +11,10 @@ arr = [0]
 val = 0
 c = 0
 
-for p in range(2,k):
+for p in range(2, k):
     c = c + 1
 
-    for n in range(2,math.ceil(p/2)+1):
+    for n in range(2, int(math.ceil(p/2)+1)):
         val = val + 1
         if p%n == 0:
             c = c - 1

@@ -2,6 +2,7 @@ import numpy as np
 import math
 from mpi4py import MPI
 import time
+import isPrimeScript
 
 start_time = time.time()
 
@@ -10,58 +11,59 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 arr = [0]
+res = []
 data = np.array([0,0])
 c = 0
 if rank == 0:
 
     print('Digite K')
     k = int(input())
-    enum = math.ceil(k/(size-1))
-    print('e ',enum)
-    
-    encargado = 1
-    missing = k-1
-    for x in range(2, k):
-        comm.Send([np.array([x,min(enum, missing)]), MPI.INT], dest=encargado, tag=encargado)
-        
-        if x%enum == 0:
-            missing = missing - enum
-            encargado = encargado + 1
+    k = (k/2)
+    maxn = math.ceil(float(k)/(size-1))
 
-    encargado = 1
-    for n in range(2,k):
-        comm.Recv([data, MPI.INT], source=encargado, tag=n)
-        arr.append(data[1])
-        c = c + data[0]
+    print('son', k, 'numeros')
+    print('son ', size, ' procesos')
+    print('son ', size-1, ' procesos esclavos')
+    print('son ', maxn, ' numeros por proceso')
 
-        encargado = encargado + 1
+    arr = [2]
+    curn = 3
+    proc = 1
+    while k > 0:
+        arr.append(curn)
+        curn = curn + 2
+        k = k - 1
 
-        if encargado%size == 0:
-            encargado = 1
+        if len(arr) >= maxn:
+            print(arr)
+            comm.Send([np.array([arr]), MPI.INT], dest=proc, tag=1)
+            proc = proc + 1
+            arr = []
+
+    if k == 0 & len(arr) != 0:
+        print(arr)
+        comm.Send([np.array([arr]), MPI.INT], dest=proc, tag=1)
+        proc = proc + 1
+        arr = []
+
+
+    for proc in range(1, size):
+        comm.Recv([data, MPI.INT], source=proc, tag=2)
+        res.append(data[1])
 
     end_time = time.time()
 
-    print('validaciones >', arr)
-    print('primos >', c)
+    print('primos >', res)
     print('tiempo de exec > ', end_time-start_time)
 else:
-    cur = 0
-    maxN = 1
-    while cur < maxN:
-        comm.Recv([data, MPI.INT], source=0, tag=rank)
+    comm.Recv([data, MPI.INT], source=0, tag=1)
 
-        p = data[0]
-        cur = cur + 1
-        maxN = data[1]
 
-        esPrimo = 1
-        val = 0
-        for n in range(2,math.ceil(p/2)+1):
-            val = val + 1
-            if p%n == 0:
-                esPrimo = 0
-                break
 
-        data[0] = esPrimo
-        data[1] = val
-        comm.Send([data, MPI.INT], dest=0, tag=p)
+#    max = len(data[0])
+ #   r = []
+  #  for i in range(0, max):
+   #     r.append(isPrimeScript.isPrime(data[0][i]))
+
+    #comm.Send([np.array([data[0], r]), MPI.INT], dest=0, tag=2)
+
