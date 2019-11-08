@@ -4,8 +4,9 @@ import time
 
 start_time = time.time()
 
-print('Digite K')
+print('Digite K en cientos de miles')
 k = int(input())
+k = k * 100000
 
 arr = [0]
 val = 0
@@ -26,6 +27,6 @@ for p in range(2, k):
 
 end_time = time.time()
 
-print('validaciones >', arr)
+#print('validaciones >', arr)
 print('primos >', c)
 print('tiempo de exec > ', end_time-start_time)
