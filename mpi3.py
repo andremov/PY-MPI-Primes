@@ -8,6 +8,11 @@ comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
 
+if size % 2 == 0 or ((size - 1) / 3) % 1 != 0:
+    print('Error en numero de procesos.')
+
+print('Numero de procesos: ', size)
+
 print("Proceso verificador ! ", rank, " con argumento ", sys.argv[1])
 
 if rank == 0:
